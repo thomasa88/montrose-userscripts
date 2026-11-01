@@ -1,74 +1,64 @@
-# Montrose on small screens
+# Montrose hemsida på mobilen
 
-`app.montrose.io` only shows its desktop interface when the browser viewport is
-at least **1024 CSS pixels** wide. Below that it shows a "download the app"
-screen instead.
+`app.montrose.io` visar bara sin vanliga datorlayout när skärmen är minst
+1024 pixlar bred, vilket ungefär motsvarar en datorskärm. Är skärmen smalare
+visas i stället en skärm som säger att du ska ladda ner appen.
 
-This project makes the site usable on phones and other small screens by forcing
-the page viewport to that desktop breakpoint (`width=1024`). The browser then
-lays the site out as a desktop page and scales it to fit the screen, just like
-Chrome's or Safari's "Request desktop website" feature. The primary approach
-does not patch the page's markup, generated class names, or translations, so it
-keeps working when Montrose updates the app.
+Det här projektet lurar webbplatsen att tro att skärmen är 1024 pixlar bred. Då
+ritas datorlayouten ut och skalas ner så att den får plats, ungefär som
+webbläsarens "Begär datorwebbplats". Sidans egna filer och texter ändras inte,
+så det brukar fortsätta fungera när Montrose uppdaterar appen.
 
-## Userscript
+## Firefox på Android
 
-Install [montrose-small-screen.user.js](./montrose-small-screen.user.js) with
-Tampermonkey, Violentmonkey, Userscripts (iOS), or another userscript manager.
+Firefox kan köra små tillägg, och det är det enklaste sättet på Android.
 
-The script runs at `document-start` and keeps the viewport `<meta>` tag pinned
-to `width=1024`, including if the app rewrites it.
+1. Öppna Firefox, tryck på menyn och välj **Tillägg**.
+2. Sök efter **ViolentMonkey** (eller TamperMonkey) och installera det.
+3. Öppna [montrose-small-screen.user.js](./montrose-small-screen.user.js) och
+   välj **Installera**.
 
-## Bookmarklet
+Skriptet startar av sig självt när du går in på https://app.montrose.io .
 
-Useful on browsers where userscripts are not available, notably iOS Safari.
+## Chrome på Android
 
-Open [montrose-small-screen.bookmarklet.html](./montrose-small-screen.bookmarklet.html)
-in a desktop browser and drag the button onto your bookmarks bar. Alternatively,
-create a bookmark and use the contents of
-[montrose-small-screen.bookmarklet.txt](./montrose-small-screen.bookmarklet.txt)
-as its URL:
+Chrome kan inte köra tillägg, så där får du använda ett bokmärke i stället.
 
-```text
-javascript:(()=>{const w=1024,c='width='+w,f=()=>{for(const m of document.querySelectorAll('meta[name=viewport]'))if(m.getAttribute('content')!==c)m.setAttribute('content',c)};f();new MutationObserver(f).observe(document,{childList:!0,subtree:!0,attributes:!0,attributeFilter:['content']});const h=()=>{if(innerWidth>=w){clearInterval(i);return}const l=document.querySelector('a[href*="apps.apple.com"],a[href*="play.google.com"]');if(l)for(let n=l;n&&n!==document.body;n=n.parentElement)if(getComputedStyle(n).position==='fixed'){n.style.setProperty('display','none','important');break}};const i=setInterval(h,500);setTimeout(()=>clearInterval(i),15000)})()
-```
+Skapa först ett bokmärke på valfri sida och redigera det sedan:
 
-Then open `https://app.montrose.io` and tap the bookmark. It applies the same
-viewport fix to the already-open page.
+1. Töm fältet för adressen.
+2. Skriv `javascript:` för hand, eftersom Chrome tar bort det om du klistrar in
+   hela koden.
+3. Klistra in resten av koden från avsnittet **Bokmärkeskoden** efter
+   `javascript:`.
+4. Spara och öppna bokmärket igen för att kontrollera att det fortfarande börjar
+   med `javascript:`.
 
-## Android
+Så här använder du det: öppna https://app.montrose.io, tryck på adressfältet
+och skriv bokmärkets namn. Välj det bland förslagen. Att gå via menyn för bokmärken fungerar inte.
 
-The userscript is the reliable option: Chrome for Android cannot run extensions,
-so use a browser that can, such as Firefox for Android with Tampermonkey or
-Violentmonkey. Chrome's "Desktop site" toggle is not enough on its own because it
-ignores the viewport meta and lays the page out at about 980 CSS pixels, below
-the site's 1024 pixel breakpoint.
+## Safari på iOS
 
-Bookmarklets do work in Chrome for Android, with two catches:
+På iPhone och iPad finns två sätt.
 
-- Chrome removes a pasted `javascript:` prefix. When editing the bookmark's URL,
-  clear the field, type `javascript:` by hand, and paste the rest of the code
-  after it. Reopen the bookmark afterwards to confirm the prefix survived; the
-  drag-to-install HTML page does not work on Android.
-- Tapping the bookmark in the bookmarks list often just navigates. Instead, open
-  `https://app.montrose.io`, tap the address bar, type the bookmark's name, and
-  choose it from the bookmark suggestions.
+**Userscripts** från App Store är ett tillägg till Safari som kan köra
+skriptet. Installera appen, slå på tillägget under **Inställningar → Safari →
+Tillägg** och öppna sedan
+[montrose-small-screen.user.js](./montrose-small-screen.user.js).
 
-A bookmarklet runs after the page has loaded, so if Montrose has already rendered
-its mobile layout, the bookmarklet may be too late. To check that it is running
-at all, try `javascript:alert(location.host + ' ' + innerWidth)`; no alert means
-the bookmark was not saved or invoked as JavaScript.
+**Bokmärke** fungerar också: skapa ett bokmärke, redigera adressen och klistra in
+koden från avsnittet **Bokmärkeskoden**. Öppna sedan Montrose och välj bokmärket.
 
-## Notes
+## Bokmärkeskoden
 
-- The page appears zoomed out, exactly like desktop mode. Pinch to zoom if
-  needed.
-- If a browser refuses to change the viewport after the page has loaded, the
-  script falls back to hiding the blocking screen, so the page content is still
-  reachable.
-- The viewport approach does not depend on Montrose's build-specific CSS class
-  names or text, so it should survive most site updates.
+Se [montrose-small-screen.bookmarklet.txt](./montrose-small-screen.bookmarklet.txt).
 
-## License
+## Bra att veta
+
+- Sidan ser utzoomad ut, precis som i datorläge. Nyp för att zooma.
+- Om webbläsaren inte byter layout när sidan redan är öppen döljs
+  blockeringsskärmen som reserv, så innehållet går att nå ändå.
+
+## Licens
 
 CC-BY-SA 4.0
