@@ -2,7 +2,7 @@
 // @name         Montrose on small screens
 // @name:sv      Montrose på liten skärm
 // @namespace    thomasa88
-// @version      2.1.0
+// @version      2.2.0
 // @description  Use app.montrose.io on phones and other small screens by giving the page a desktop-width viewport
 // @description:sv Använd app.montrose.io på telefoner och andra små skärmar genom att ge sidan en skrivbordsbredd
 // @match        https://app.montrose.io/*
@@ -133,12 +133,17 @@
   });
 
   // The dialog is mounted after hydration, so it cannot be found in the
-  // server-rendered markup. Retry briefly, then give up.
+  // server-rendered markup. Keep retrying for a while, since the user may
+  // first have to log in before the dialog appears, then give up.
+  const POLL_INTERVAL_MS = 2000;
+  const POLL_DURATION_MS = 2 * 60 * 1000;
   let tries = 0;
   const poller = setInterval(() => {
     tries += 1;
-    if (hideMobileBlock() || tries >= 30) clearInterval(poller);
-  }, 500);
+    if (hideMobileBlock() || tries >= POLL_DURATION_MS / POLL_INTERVAL_MS) {
+      clearInterval(poller);
+    }
+  }, POLL_INTERVAL_MS);
 
   addEventListener('DOMContentLoaded', setViewport, { once: true });
   addEventListener('load', setViewport, { once: true });
