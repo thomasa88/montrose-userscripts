@@ -49,6 +49,13 @@ Tillägg** och öppna sedan
 **Bokmärke** fungerar också: skapa ett bokmärke, redigera adressen och klistra in
 koden från avsnittet **Bokmärkeskoden**. Öppna sedan Montrose och välj bokmärket.
 
+## Litet fönster på dator
+
+Det finns begränsat stöd för att visa Montrose sida i ett litet fönster på
+dator. En del av menyknapparna visas inte när fönstret är litet.
+
+Installera userscript eller bokmärke på liknande sätt som på mobil.
+
 ## Bokmärkeskoden
 
 Se [montrose-small-screen.bookmarklet.txt](./montrose-small-screen.bookmarklet.txt).
