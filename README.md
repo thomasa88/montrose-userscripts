@@ -15,7 +15,7 @@ Firefox kan köra små tillägg, och det är det enklaste sättet på Android.
 
 1. Öppna Firefox, tryck på menyn och välj **Tillägg**.
 2. Sök efter **ViolentMonkey** (eller TamperMonkey) och installera det.
-3. Öppna [montrose-small-screen.user.js](./montrose-small-screen.user.js) och
+3. Öppna [montrose-small-screen.user.js](https://raw.githubusercontent.com/thomasa88/montrose-userscripts/refs/heads/main/montrose-small-screen.user.js) och
    välj **Installera**.
 
 Skriptet startar av sig självt när du går in på https://app.montrose.io .
