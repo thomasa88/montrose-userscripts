@@ -2,7 +2,7 @@
 // @name         Montrose on small screens
 // @name:sv      Montrose på liten skärm
 // @namespace    thomasa88
-// @version      2.0.0
+// @version      2.1.0
 // @description  Use app.montrose.io on phones and other small screens by giving the page a desktop-width viewport
 // @description:sv Använd app.montrose.io på telefoner och andra små skärmar genom att ge sidan en skrivbordsbredd
 // @match        https://app.montrose.io/*
@@ -44,30 +44,56 @@
     }
   }
 
-  // Last-resort fallback for browsers that ignore viewport changes (some
-  // in-app browsers). The blocking screen is the only fixed layer with App
-  // Store / Google Play links, so finding it this way does not depend on
-  // class names or UI language.
-  function hideMobileBlock() {
-    const storeLink = document.querySelector(
-      'a[href*="apps.apple.com"], a[href*="play.google.com"]',
-    );
-    if (!storeLink) return;
+  // Fallback for browsers that ignore viewport changes (some in-app
+  // browsers): hide the "use the app instead" dialog. It is rendered in a
+  // Base UI portal that is a sibling of the app, so hiding the whole portal
+  // removes the backdrop and the dialog together without touching the app.
+  //
+  // Do not hide a `position: fixed` ancestor instead: the nearest one is the
+  // dialog popup, and hiding only that leaves the inert full-screen backdrop
+  // covering the page.
+  const BLOCK_TEXT = 'Vill du använda Montrose i din telefon?';
+  const BLOCK_PATHS = [
+    // Preferred: the portal that Base UI mounts the dialog and its backdrop in.
+    `//div[@data-base-ui-portal][contains(normalize-space(.), "${BLOCK_TEXT}")]`,
+    // Only if the portal attribute ever changes: the body-level dialog wrapper.
+    `/html/body/div[contains(normalize-space(.), "${BLOCK_TEXT}")][.//*[@role="dialog"]]`,
+  ];
 
-    for (let node = storeLink; node && node !== document.body; node = node.parentElement) {
-      if (getComputedStyle(node).position === 'fixed') {
-        node.style.setProperty('display', 'none', 'important');
-        return;
-      }
+  function findMobileBlock() {
+    const evaluator = new XPathEvaluator();
+    for (const path of BLOCK_PATHS) {
+      const node = evaluator
+        .createExpression(path)
+        .evaluate(document, XPathResult.FIRST_ORDERED_NODE_TYPE).singleNodeValue;
+      if (node) return node;
     }
+    return null;
   }
 
-  function apply() {
-    setViewport();
-    if (window.innerWidth < DESKTOP_WIDTH) hideMobileBlock();
+  // A dialog wrapper never holds the app chrome, so this catches the case
+  // where a path above matches an app container and would blank the page.
+  function holdsAppChrome(node) {
+    const chrome = 'main, nav, form, [role="main"]';
+    return node.matches(chrome) || node.querySelector(chrome) !== null;
   }
 
-  apply();
+  // Returns true once the dialog is hidden, so the caller can stop polling.
+  function hideMobileBlock() {
+    const overlay = findMobileBlock();
+    if (!overlay || overlay === document.body) return false;
+    if (holdsAppChrome(overlay)) return false;
+
+    // At desktop width the same markup is in the page but hidden by the
+    // min-width media query. Only act on a dialog the user can actually see.
+    if (overlay.getClientRects().length === 0) return false;
+
+    overlay.style.setProperty('display', 'none', 'important');
+    console.debug('Montrose on small screens: hid the app dialog');
+    return true;
+  }
+
+  setViewport();
 
   // The viewport tag is part of the server-rendered HTML, which may be parsed
   // after this script starts. The app may also touch <head> later on, so keep
@@ -83,18 +109,18 @@
   new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (mutation.type === 'attributes') {
-        if (mutation.target.nodeName === 'META') apply();
+        if (mutation.target.nodeName === 'META') setViewport();
         continue;
       }
       for (const node of mutation.addedNodes) {
         if (isViewportRelated(node)) {
-          apply();
+          setViewport();
           return;
         }
       }
       for (const node of mutation.removedNodes) {
         if (isViewportRelated(node)) {
-          apply();
+          setViewport();
           return;
         }
       }
@@ -106,6 +132,14 @@
     attributeFilter: ['content', 'name'],
   });
 
-  addEventListener('DOMContentLoaded', apply, { once: true });
-  addEventListener('load', apply, { once: true });
+  // The dialog is mounted after hydration, so it cannot be found in the
+  // server-rendered markup. Retry briefly, then give up.
+  let tries = 0;
+  const poller = setInterval(() => {
+    tries += 1;
+    if (hideMobileBlock() || tries >= 30) clearInterval(poller);
+  }, 500);
+
+  addEventListener('DOMContentLoaded', setViewport, { once: true });
+  addEventListener('load', setViewport, { once: true });
 })();

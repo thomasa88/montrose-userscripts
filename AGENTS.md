@@ -32,9 +32,28 @@ spoofing is unnecessary.
 
 The viewport meta is server-rendered and may be parsed after
 `document-start`. Keep the `MutationObserver` that pins it rather than patching
-once, so later head changes cannot undo the fix. The last-resort fallback finds
-the blocking layer via App Store/Google Play links; do not match Stylex classes
-(`x...`) or Swedish UI text, both are build/localization-specific.
+once, so later head changes cannot undo the fix.
+
+The fallback hides the dialog itself, never an ancestor. The dialog is rendered
+in a Base UI portal (`div[data-base-ui-portal]`, a body-level sibling of the app)
+together with its full-screen backdrop, so hiding that portal removes backdrop
+and popup while the app stays visible. It is matched by its Swedish heading
+(`Vill du använda Montrose i din telefon?`), a deliberate tradeoff: wording and
+UI language are localization-specific, and an unmatched dialog fails to a
+visible block, not a broken page. Hide only when
+`getClientRects().length > 0`, because the same markup is present at desktop
+width and CSS-hidden there.
+
+Match the portal first; the body-level `div` lookup is only a fallback for a
+future Base UI rename. Any candidate that contains app chrome
+(`main, nav, form, [role="main"]`) is rejected, so a wrong match leaves the
+dialog visible instead of hiding the app.
+
+Do not go back to climbing from the App Store/Google Play links to a
+`position: fixed` ancestor, and do not match Stylex classes (`x...`) or the
+React-generated portal ids (`_r_...`). The fixed ancestor is the `role="dialog"`
+popup; hiding only it leaves the inert backdrop covering the page, which looks
+like a blank app and cannot be undone without a reload.
 
 ## Verification
 
